@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { TFunc } from './locale'
 import { McpServerSection } from './McpServerSection'
 import { DriveSettingsCard } from './DriveSettingsCard'
+import { WebDavSettingsCard } from './WebDavSettingsCard'
 import { McpServersCard } from './mcp/McpServersCard'
 import {
   SHARED_AGENT_ID,
@@ -208,6 +209,8 @@ export function IntegrationsPane({
       <h3 className="set-pane-title">{t('setSecIntegrations')}</h3>
 
       <DriveSettingsCard />
+
+      <WebDavSettingsCard />
 
       <McpServersCard />
 

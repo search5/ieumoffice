@@ -14,6 +14,7 @@
     "./doc-attach-channels": "./src/doc-attach-channels.ts",
     "./drive-ai-bridge": "./src/drive-ai-bridge.ts",
     "./drive-ai-channels": "./src/drive-ai-channels.ts",
+    "./webdav-ai-channels": "./src/webdav-ai-channels.ts",
     "./outbound-bridge": "./src/outbound-bridge.ts",
     "./outbound-channels": "./src/outbound-channels.ts",
     "./project-folder-bridge": "./src/project-folder-bridge.ts",

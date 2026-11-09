@@ -515,6 +515,17 @@ metadata:
 
 빌드: `GENOFFICE_GOOGLE_CLIENT_ID`(`….apps.googleusercontent.com`)와 `GENOFFICE_GOOGLE_CLIENT_SECRET`이 껍데기 앱을 빌드하는 환경에 있을 때만 드라이브가 들어간다. 없으면 상태는 `unavailable`이고 화면에 드라이브가 나오지 않는다.
 
+## WebDAV (결정 0117, 0118)
+
+데이터 폴더의 파일:
+
+- `webdav-servers.json`: `{ "version": 1, "servers": [{ "id", "name", "url", "username", "password" }] }`. `password`는 운영체제 암호화(Electron `safeStorage`)로 감싼 base64이고, 암호화를 쓸 수 없으면 `null`이다(그 경우 비밀번호는 메모리에만 있다). 서버는 10개까지다.
+- `webdav-cache/`: 연 서버 파일의 PC 사본. `webdav-cache/<서버 id>/<경로 해시>/<이름>`이고, `webdav-cache/index.json`이 사본과 서버 파일을 잇는다. 항목에는 서버 id, 서버 경로, 이름, PC 경로, 마지막으로 맞춘 내용의 해시(SHA-256), 서버의 `etag`·`modified`·`size`, 저장 보류(`detached`), 마지막으로 연 시각이 있다. 30일 안 열었고 올리지 못한 수정이 없는 사본은 지운다.
+
+`app-settings.json`의 `webdavAiAccess`(참일 때만 켜짐, 기본 꺼짐)는 편집기의 AI가 연결한 WebDAV 서버를 둘러보고 읽어도 되는지다.
+
+창구 이름은 `webdav:servers`, `webdav:servers-changed`, `webdav:add`, `webdav:set-password`, `webdav:remove`, `webdav:list`, `webdav:open`, `webdav:ai-access`, `webdav:set-ai-access`(껍데기 앱의 화면용)와 `webdav:ai-enabled`, `webdav:ai-list`, `webdav:ai-search`, `webdav:ai-read`, `webdav:ai-changed`(편집기 AI용, `@genoffice/electron-utils/webdav-ai-channels`)다. 편집기 preload는 `window.aiOfficeDriveAi`(`driveAiBridge()`)에 `webdavAiEnabled`·`webdavList`·`webdavSearch`·`webdavRead`·`onWebdavAiChanged`를 같이 내준다. AI 도구 이름 `webdav_list`·`webdav_search`·`webdav_read`와 입력(`server`는 `webdav_list`가 돌려준 서버 id, `path`는 연결한 폴더 기준 경로)은 밖에서 기대고 있다.
+
 ## 사용자 MCP 서버 (결정 0100)
 
 앱이 MCP 클라이언트로 붙는 바깥 서버다. 사람이 설정 → 연동의 "MCP 서버" 카드에 등록한다. 터미널 명령어와 그 MCP 서버, 앱 안 MCP 서버는 이것을 쓰지 않는다.

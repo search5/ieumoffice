@@ -4,6 +4,12 @@ import { isOutboundCall } from './outbound'
 import { guardOutbound, windowOutboundBridge } from './outbound-guard'
 import { createUserMcpSkill, windowMcpState } from './user-mcp-skill'
 import { guardReceivedContent } from './user-mcp/keep-inside'
+import {
+  createBridgedWebDavSkill,
+  guardWebDavContent,
+  windowWebDavBridge,
+  type WebDavSkill,
+} from './webdav-skill'
 
 export { OUTBOUND_TOOLS, isOutboundCall } from './outbound'
 
@@ -329,18 +335,24 @@ function composeGuarded(
   messages: () => readonly AgentMessage[],
   skills: AgentSkill[],
   drive: DriveSkill | null,
+  webdav: WebDavSkill | null = null,
 ): AgentSkill {
   const mcp = windowMcpState()
   const all = [
     ...skills,
     ...(drive ? [drive] : []),
+    ...(webdav ? [webdav] : []),
     ...(mcp ? [createUserMcpSkill(mcp, messages)] : []),
   ]
   const composed = composeSkills(id, intro, all)
   const kept = mcp
     ? guardReceivedContent(composed, { keepsInside: (server) => mcp.keepsInside(server), messages })
     : composed
-  return guardOutbound(guardDriveContent(kept, drive), windowOutboundBridge(), messages)
+  return guardOutbound(
+    guardWebDavContent(guardDriveContent(kept, drive), webdav),
+    windowOutboundBridge(),
+    messages,
+  )
 }
 
 /**
@@ -360,7 +372,10 @@ export function composeWithDrive(
 ): AgentSkill {
   const bridge = windowDriveBridge()
   const drive = bridge ? createBridgedDriveSkill(bridge, messages) : null
-  return composeGuarded(id, intro, messages, skills, drive)
+  // WebDAV rides the same preload bridge (decision 0118)
+  const webdavBridge = windowWebDavBridge()
+  const webdav = webdavBridge ? createBridgedWebDavSkill(webdavBridge, messages) : null
+  return composeGuarded(id, intro, messages, skills, drive, webdav)
 }
 
 /**

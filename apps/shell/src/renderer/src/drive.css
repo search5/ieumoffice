@@ -300,3 +300,32 @@
   margin: 6px 0 0;
   align-items: center;
 }
+
+/* WebDAV add form and password prompt: fields stacked, each input as wide as the box */
+.set-intg-confirm.set-webdav-form {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.set-webdav-form label.set-field-desc {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.set-webdav-form .set-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.set-webdav-form .set-drive-row {
+  margin: 0;
+}
+
+.set-webdav-form .set-drive-row .set-input {
+  flex: 1 1 160px;
+  width: auto;
+}

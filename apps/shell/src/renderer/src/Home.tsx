@@ -68,6 +68,8 @@ import type { QuickLookPayload } from '../../shared/quick-look-api'
 import { agentText } from './i18n/strings-agent'
 import { DriveNavIcon, DrivePanel, useDriveState } from './DrivePanel'
 import { driveUiText } from './i18n/strings-drive'
+import { WebDavNavIcon, WebDavPanel, useWebDavServers } from './WebDavPanel'
+import { webdavUiText } from './i18n/strings-webdav'
 import { ProjectsPanel, subscribeProjectScreen, type ProjectScreenRequest } from './ProjectsPanel'
 import { projectsText } from './i18n/strings-projects'
 
@@ -1124,6 +1126,10 @@ export function Home({
   const [driveMode, setDriveMode] = useState(false)
   const driveState = useDriveState()
   const driveOffered = driveState !== null && driveState.state !== 'unavailable'
+  // WebDAV servers take over the content area the same way
+  const [webdavMode, setWebdavMode] = useState(false)
+  const webdavOffered =
+    useWebDavServers() !== null && typeof window.aiOfficeWebDav?.servers === 'function'
   // the project screen (decision 0088) takes over the content area the same way
   const [projectsMode, setProjectsMode] = useState(false)
   const [projectRequest, setProjectRequest] = useState<ProjectScreenRequest | null>(null)
@@ -1137,6 +1143,7 @@ export function Home({
         setProjectsMode(true)
         setAskMode(false)
         setDriveMode(false)
+        setWebdavMode(false)
         setSelectedFolder(null)
         setProjectRequest(request)
       }),
@@ -1630,6 +1637,7 @@ export function Home({
     setSelectedFolder(null)
     setAskMode(false)
     setDriveMode(false)
+    setWebdavMode(false)
     setProjectsMode(false)
     setSelected(new Set())
     setRowMenu(null)
@@ -1652,6 +1660,7 @@ export function Home({
     setSelectedFolder(dir)
     setAskMode(false)
     setDriveMode(false)
+    setWebdavMode(false)
     setProjectsMode(false)
     setSelected(new Set())
     setRowMenu(null)
@@ -2955,7 +2964,7 @@ export function Home({
           }
           return
         }
-      } else if (event.key === ' ' && !askMode && !driveMode && !projectsMode) {
+      } else if (event.key === ' ' && !askMode && !driveMode && !webdavMode && !projectsMode) {
         const checkedPath = selectedFolder ? folderSelectedPaths[0] : selectedPaths[0]
         const candidate = hoveredFilePathRef.current ?? checkedPath ?? null
         if (candidate) {
@@ -3286,7 +3295,13 @@ export function Home({
     })
 
   const activeNav =
-    !selectedFolder && !driveMode ? (projectsMode ? 'projects' : askMode ? 'ask' : view) : null
+    !selectedFolder && !driveMode && !webdavMode
+      ? projectsMode
+        ? 'projects'
+        : askMode
+          ? 'ask'
+          : view
+      : null
 
   const onSidebarResizeStart = (e: ReactPointerEvent<HTMLDivElement>) => {
     const startX = e.clientX
@@ -3370,6 +3385,7 @@ export function Home({
             onClick={() => {
               setAskMode(true)
               setDriveMode(false)
+              setWebdavMode(false)
               setProjectsMode(false)
               setSelectedFolder(null)
               setSelected(new Set())
@@ -3401,6 +3417,7 @@ export function Home({
                 setProjectsMode(true)
                 setAskMode(false)
                 setDriveMode(false)
+                setWebdavMode(false)
                 setSelectedFolder(null)
                 setSelected(new Set())
                 setRowMenu(null)
@@ -3462,6 +3479,7 @@ export function Home({
               data-testid="home-drive-nav"
               onClick={() => {
                 setDriveMode(true)
+                setWebdavMode(false)
                 setAskMode(false)
                 setProjectsMode(false)
                 setSelectedFolder(null)
@@ -3471,6 +3489,24 @@ export function Home({
             >
               <DriveNavIcon />
               <span className="nav-label">{driveUiText(lang, 'driveNav')}</span>
+            </button>
+          )}
+          {webdavOffered && (
+            <button
+              className={`nav-item${webdavMode && !selectedFolder ? ' active' : ''}`}
+              data-testid="home-webdav-nav"
+              onClick={() => {
+                setWebdavMode(true)
+                setDriveMode(false)
+                setAskMode(false)
+                setProjectsMode(false)
+                setSelectedFolder(null)
+                setSelected(new Set())
+                setRowMenu(null)
+              }}
+            >
+              <WebDavNavIcon />
+              <span className="nav-label">{webdavUiText(lang, 'webdavNav')}</span>
             </button>
           )}
         </nav>
@@ -3487,6 +3523,12 @@ export function Home({
       <div className="sidebar-resizer" onPointerDown={onSidebarResizeStart} />
       {selectedFolder && rootOf(selectedFolder, roots)?.readable ? (
         renderFolderContent()
+      ) : webdavMode && webdavOffered ? (
+        <WebDavPanel
+          lang={lang}
+          dateLocale={i18n.dateLocale}
+          onOpenSettings={() => setSettingsRequest({ section: 'integrations' })}
+        />
       ) : driveMode && driveOffered ? (
         <DrivePanel
           lang={lang}

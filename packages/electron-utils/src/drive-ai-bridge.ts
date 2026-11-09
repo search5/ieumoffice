@@ -3,6 +3,7 @@
 /// checks their shape before use.
 import { ipcRenderer } from 'electron'
 import { DRIVE_AI_CHANNELS, driveAiOn, driveConnectedOf } from './drive-ai-channels'
+import { WEBDAV_AI_CHANNELS } from './webdav-ai-channels'
 
 export interface DriveAiBridge {
   driveAiEnabled(): Promise<boolean>
@@ -15,6 +16,12 @@ export interface DriveAiBridge {
   onDriveConnectedChanged(listener: (connected: boolean) => void): () => void
   /** opens the attach-from-Drive window; resolves with the downloaded paths, or why not */
   drivePickAttachments(): Promise<unknown>
+  /** WebDAV rides the same bridge so every editor's preload gets it (decision 0118) */
+  webdavAiEnabled(): Promise<boolean>
+  webdavList(server: string, path: string): Promise<unknown>
+  webdavSearch(query: string, server: string, path: string, limit: number): Promise<unknown>
+  webdavRead(server: string, path: string, offset: number): Promise<unknown>
+  onWebdavAiChanged(listener: (on: boolean) => void): () => void
 }
 
 export function driveAiBridge(): DriveAiBridge {
@@ -46,5 +53,29 @@ export function driveAiBridge(): DriveAiBridge {
         ok: false,
         reason: 'cancelled',
       })),
+    webdavAiEnabled: async () =>
+      (await ipcRenderer.invoke(WEBDAV_AI_CHANNELS.enabled).catch(() => false)) === true,
+    webdavList: (server, path) =>
+      ipcRenderer.invoke(WEBDAV_AI_CHANNELS.list, { server: String(server), path: String(path) }),
+    webdavSearch: (query, server, path, limit) =>
+      ipcRenderer.invoke(WEBDAV_AI_CHANNELS.search, {
+        q: String(query),
+        server: String(server),
+        path: String(path),
+        limit: Number(limit),
+      }),
+    webdavRead: (server, path, offset) =>
+      ipcRenderer.invoke(WEBDAV_AI_CHANNELS.read, {
+        server: String(server),
+        path: String(path),
+        offset: Number(offset),
+      }),
+    onWebdavAiChanged(listener) {
+      const handler = (_event: unknown, on: unknown) => listener(on === true)
+      ipcRenderer.on(WEBDAV_AI_CHANNELS.changed, handler)
+      return () => {
+        ipcRenderer.removeListener(WEBDAV_AI_CHANNELS.changed, handler)
+      }
+    },
   }
 }

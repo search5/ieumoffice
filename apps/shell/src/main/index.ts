@@ -136,6 +136,7 @@ import { registerIntegrationsIpc } from './integrations-ipc'
 import { registerResultStoreIpc } from './result-store-ipc'
 import { FEEDBACK_SURVEY_URL, feedbackDetails, feedbackText, platformLabel } from './feedback'
 import { registerDriveIpc, type DriveService } from './drive/drive-ipc'
+import { registerWebDavIpc, type WebDavService } from './webdav/webdav-ipc'
 import { startMcpHub } from './mcp-client/hub-app'
 import type { McpHub } from './mcp-client/hub'
 import { freeAiInUse } from './drive/drive-consent'
@@ -898,6 +899,8 @@ registerPrivilegedSchemes([EPUB_ASSET_SCHEME_PRIVILEGE, DRAWIO_SCHEME_PRIVILEGE]
 const APP_SETTINGS_PATH = () => join(app.getPath('userData'), 'app-settings.json')
 /** Google Drive (decision 0033); registered once this instance holds the single-instance lock */
 let driveService: DriveService | null = null
+/** WebDAV servers: copies of their files and the sync of saves */
+let webdavService: WebDavService | null = null
 /** the person's own MCP servers (user MCP spec 5.1); started once the app is ready */
 let mcpHub: McpHub | null = null
 const OPEN_DOCUMENTS_PATH = () => join(app.getPath('userData'), OPEN_DOCUMENTS_FILE)
@@ -5564,6 +5567,11 @@ function openDocumentPath(filePath: string): boolean {
     void viaDrive.catch(() => routeDocumentPath(filePath))
     return true
   }
+  const viaWebDav = webdavService?.reopen(filePath)
+  if (viaWebDav) {
+    void viaWebDav.catch(() => routeDocumentPath(filePath))
+    return true
+  }
   const opened = routeDocumentPath(filePath)
   return opened
 }
@@ -9751,6 +9759,20 @@ app.whenReady().then(async () => {
     freeAi: () => freeAiInUse(readStoredAiSettings()),
     documentOf: (id) => tabManager?.describeWebContents(id)?.filePath ?? null,
   })
+  webdavService = registerWebDavIpc({
+    userData: () => app.getPath('userData'),
+    lang: () => currentLang(),
+    window: () => shellWindow,
+    // a server copy opens like any local file; the WebDAV service already chose the copy
+    openPath: (path) => routeDocumentPath(path),
+    settingsPath: APP_SETTINGS_PATH,
+    parse: (path) => parseFileToText(path),
+    freeAi: () => freeAiInUse(readStoredAiSettings()),
+    isOpen: (path) =>
+      (tabManager?.openFilePaths() ?? []).some(
+        (open) => resolve(open).toLowerCase() === resolve(path).toLowerCase(),
+      ),
+  })
   // The person's own MCP servers: one connection per server for every window;
   // Settings changes them through a channel only the shell window may use.
   mcpHub = startMcpHub({
@@ -10295,6 +10317,7 @@ function releaseAppResources(): void {
   if (ownsOpenDocumentsRegistry) clearOpenDocuments(OPEN_DOCUMENTS_PATH())
   stopAgentSessions()
   driveService?.stop()
+  webdavService?.stop()
   void mcpHub?.stopAll()
   stopQuickLookRuntime()
   shutdownSubscriptionChildren()

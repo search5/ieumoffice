@@ -61,6 +61,8 @@ import type {
 import { RESULT_STORE_CHANNELS } from '../shared/result-store-api'
 import { DRIVE_CHANNELS } from '../shared/drive-api'
 import type { DriveApi, DriveUiState } from '../shared/drive-api'
+import { WEBDAV_CHANNELS } from '../shared/webdav-api'
+import type { WebDavApi, WebDavServerInfo } from '../shared/webdav-api'
 import { MCP_SERVERS_CHANNELS, MCP_SERVERS_SETTINGS_KEY } from '../shared/mcp-servers-api'
 import type { McpServersApi, McpServersSettingsView } from '../shared/mcp-servers-api'
 import type { ResultStoreApi } from '../shared/result-store-api'
@@ -744,6 +746,29 @@ const driveApi: DriveApi = {
   pickOpen: () => ipcRenderer.invoke(DRIVE_CHANNELS.pickOpen),
 }
 contextBridge.exposeInMainWorld('aiOfficeDrive', driveApi)
+
+// WebDAV servers: add and remove them, browse a folder, open a file. Main keeps
+// the passwords; this bridge carries server lists, folder listings and paths.
+const webdavApi: WebDavApi = {
+  servers: () => ipcRenderer.invoke(WEBDAV_CHANNELS.servers) as Promise<WebDavServerInfo[]>,
+  onServersChanged(listener) {
+    const handler = (_event: IpcRendererEvent, servers: WebDavServerInfo[]) => listener(servers)
+    ipcRenderer.on(WEBDAV_CHANNELS.serversChanged, handler)
+    return () => {
+      ipcRenderer.removeListener(WEBDAV_CHANNELS.serversChanged, handler)
+    }
+  },
+  add: (request) => ipcRenderer.invoke(WEBDAV_CHANNELS.add, request),
+  setPassword: (id, password) => ipcRenderer.invoke(WEBDAV_CHANNELS.setPassword, id, password),
+  async remove(id) {
+    await ipcRenderer.invoke(WEBDAV_CHANNELS.remove, id)
+  },
+  list: (id, path) => ipcRenderer.invoke(WEBDAV_CHANNELS.list, id, path),
+  open: (id, path) => ipcRenderer.invoke(WEBDAV_CHANNELS.open, id, path),
+  aiAccess: () => ipcRenderer.invoke(WEBDAV_CHANNELS.aiAccess) as Promise<boolean>,
+  setAiAccess: (on) => ipcRenderer.invoke(WEBDAV_CHANNELS.setAiAccess, on === true),
+}
+contextBridge.exposeInMainWorld('aiOfficeWebDav', webdavApi)
 
 // The person's MCP servers in Settings → Integrations (user MCP spec 4). Only
 // this window gets these calls, and main answers them for this window only;

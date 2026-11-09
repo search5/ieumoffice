@@ -35,6 +35,7 @@
     "@genoffice/sheets": "*",
     "@genoffice/slides": "*",
     "@genoffice/ui": "*",
+    "@genoffice/webdav": "*",
     "@genoffice/xlsx-gateway": "*",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@types/react": "^19.2.14",

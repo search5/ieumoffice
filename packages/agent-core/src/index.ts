@@ -33,6 +33,28 @@ export {
   windowDriveBridge,
 } from './drive-skill'
 export {
+  WEBDAV_LIST_TOOL,
+  WEBDAV_OUTBOUND_BLOCKED,
+  WEBDAV_READ_TOOL,
+  WEBDAV_SEARCH_TOOL,
+  createBridgedWebDavSkill,
+  createWebDavSkill,
+  guardWebDavContent,
+  hasWebDavBridge,
+  holdsWebDavContent,
+  windowWebDavBridge,
+} from './webdav-skill'
+export type {
+  WebDavBridgeLike,
+  WebDavCallResult,
+  WebDavListEntry,
+  WebDavReadPage,
+  WebDavSearchHit,
+  WebDavServerRef,
+  WebDavSkill,
+  WebDavSkillDeps,
+} from './webdav-skill'
+export {
   ADDRESS_DECLINED,
   INTERNET_TOOLS_OFF,
   UNVOUCHED_RESULT_TOOLS,
